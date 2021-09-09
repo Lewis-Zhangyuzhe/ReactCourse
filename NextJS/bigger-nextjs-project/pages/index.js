@@ -1,4 +1,7 @@
+import Head from "next/head";
+import { MongoClient } from "mongodb";
 import MeetupList from "../components/meetups/MeetupList";
+import { Fragment } from "react";
 
 const DUMMY_MEETUPS = [
   {
@@ -20,7 +23,18 @@ const DUMMY_MEETUPS = [
 ];
 
 function HomePage(props) {
-  return <MeetupList meetups={props.meetups} />;
+  return (
+    <Fragment>
+      <Head>
+        <title>React Meetups</title>
+        <meta
+          name="description"
+          content="Browse a huge list of highly active React meetups"
+        ></meta>
+      </Head>
+      <MeetupList meetups={props.meetups} />
+    </Fragment>
+  );
 }
 
 // export async function getServerSideProps(context) {
@@ -33,8 +47,28 @@ function HomePage(props) {
 // }
 
 export async function getStaticProps() {
+  // Fetch data from mongodb
+  const client = await MongoClient.connect(
+    "mongodb+srv://lewiswithoutgantanhao:1comeonbaby@cluster0.j1rjb.mongodb.net/myFirstDatabase?retryWrites=true&w=majority"
+  );
+
+  const db = client.db();
+
+  const meetupsCollection = db.collection("meetups");
+
+  const meetups = await meetupsCollection.find().toArray();
+
+  client.close();
+
   return {
-    props: { meetups: DUMMY_MEETUPS },
+    props: {
+      meetups: meetups.map((meetup) => ({
+        title: meetup.title,
+        address: meetup.address,
+        image: meetup.image,
+        id: meetup._id.toString(),
+      })),
+    },
     revalidate: 1,
   };
 }
